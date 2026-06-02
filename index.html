@@ -458,7 +458,12 @@ canvas{width:100% !important;}
         </select>
       </div>
       <div id="nfSavedSec">
-        <div class="fdiv"></div><div class="fslbl">З бібліотеки</div>
+        <div class="fdiv"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <div class="fslbl" style="margin:0">З бібліотеки</div>
+          <input class="fin" type="text" id="nfLibSearch" placeholder="🔍 пошук…" oninput="populateSaved()" style="width:130px;padding:5px 9px;font-size:11px;">
+        </div>
+        <div class="cat-tabs" id="nfCatTabs" style="padding:0 0 6px;margin-bottom:2px;"></div>
         <div class="saved-scroll" id="savedList"></div>
       </div>
       <div class="ff" id="wField" style="display:none">
@@ -1043,6 +1048,8 @@ function openModal(name, mealP){
     document.getElementById('manLbl').textContent='Або вручну';
     document.getElementById('wField').style.display='none';
     selSaved=null;
+    nfSelCat='all';
+    const nfSearch=document.getElementById('nfLibSearch'); if(nfSearch) nfSearch.value='';
     if(mealP) document.getElementById('nfMeal').value=mealP;
     clearNF(); populateSaved();
   }
@@ -1092,10 +1099,29 @@ function clearNF(){
   document.getElementById('nfW').value='';
   selSaved=null;
 }
+let nfSelCat = 'all';
+
 function populateSaved(){
-  const l=document.getElementById('savedList');
+  // Build category tabs
+  const tc = document.getElementById('nfCatTabs');
+  if(tc){
+    tc.innerHTML = categories.map(c =>
+      `<button class="cat-tab${c.id===nfSelCat?' act':''}" onclick="nfSelCat='${c.id}';populateSaved()" style="padding:4px 10px;font-size:10px;">${c.emoji} ${c.name}</button>`
+    ).join('');
+  }
+  const l = document.getElementById('savedList');
   if(!l) return;
-  l.innerHTML=foodLib.map(f=>`<button class="sib" id="si-${f.id}" onclick="selectSaved('${f.id}')"><span class="sie">${f.emoji||'🍽'}</span><span class="sin">${f.name}</span><span class="sii">${f.cal} ккал/${f.unit==='pcs'?'шт':'100г'}</span></button>`).join('');
+  const q = (document.getElementById('nfLibSearch')?.value||'').toLowerCase();
+  const filtered = foodLib.filter(f => {
+    const matchCat = nfSelCat==='all' || f.cat===nfSelCat;
+    const matchQ = !q || f.name.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
+  if(!filtered.length){
+    l.innerHTML=`<div style="text-align:center;padding:12px;font-size:11px;color:var(--muted)">Нічого не знайдено</div>`;
+    return;
+  }
+  l.innerHTML=filtered.map(f=>`<button class="sib" id="si-${f.id}" onclick="selectSaved('${f.id}')"><span class="sie">${f.emoji||'🍽'}</span><span class="sin">${f.name}</span><span class="sii">${f.cal} ккал/${f.unit==='pcs'?'шт':'100г'}</span></button>`).join('');
 }
 function selectSaved(id){
   selSaved=foodLib.find(f=>f.id===id);
@@ -1583,4 +1609,3 @@ renderCatTabs();
 </script>
 </body>
 </html>
-
